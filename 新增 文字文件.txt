@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REGALO Nails</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Noto Serif TC"', 'serif'],
+            sans: ['"Noto Sans TC"', 'sans-serif'],
+            display: ['"Cinzel"', 'serif'],
+          },
+          colors: {
+            cream: {
+              50: '#FDFCF8',
+              100: '#F9F6F0',
+              200: '#F0EBE0',
+              300: '#E6DFC8',
+            },
+            sand: {
+              400: '#D4C5A9',
+              500: '#BFA985',
+              600: '#9E8866',
+            },
+            stone: {
+              800: '#44403C',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Import Map (Fixed for React 18 Compatibility) -->
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "lucide-react": "https://esm.sh/lucide-react@0.294.0",
+    "@google/genai": "https://esm.sh/@google/genai@0.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/"
+  }
+}
+</script>
+
+  <!-- Babel for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #FDFCF8;
+      color: #44403C;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Main Application Script -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useRef } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { 
+      ChevronLeft, ChevronRight, Instagram, MessageCircle, X, BadgeCheck, 
+      ArrowRight, Copy, Check, Clock, MapPin, ChevronDown, ChevronUp, AlertCircle,
+      Sparkles, Send, Loader2, Bot, Star
+    } from 'lucide-react';
+    
+    // 注意：若要使用 AI 功能，請在此填入您的 API Key，若無可留空
+    // const GOOGLE_API_KEY = "您的_API_KEY"; 
+    
+    // 為了安全起見，若要在 GitHub Pages 上使用 AI，建議不要直接將 Key 寫死在公開代碼中
+    // 這裡我們保留介面，但不執行實際 API 呼叫，除非您填入 Key
+
+    // --- TYPES & ENUMS (Converted to standard JS Objects) ---
+    const PageTab = {
+      PRICES: 'prices',
+      BOOKING_PROCESS: 'booking_process',
+      ARTISTS: 'artists',
+      BOOKING: 'booking',
+      PRE_CARE: 'pre_care',
+      AFTER_CARE: 'after_care',
+      FAQ: 'faq'
+    };
+
+    // --- CONSTANTS & DATA ---
+    const SALON_NAME = "REGALO";
+    const PEER_WARNING = "為保證教學課程付費學員之權益，恕不接待同行預約服務";
+
+    const SALON_FEATURES = [
+      {
+        title: "採用一層殘",
+        description: "本店堅持採用日式「一層殘」技術（Fill-in）。不同於傳統完全卸甲，此技術在修整時保留基底膠層，避免反覆拋磨真甲表面。這能有效保護指甲結構，讓您的真甲在長期做美甲的情況下，依然維持健康厚度與強韌度，是重視指甲健康的您的最佳選擇。"
+      },
+      {
+        title: "課程教學",
+        description: "想成為專業美甲師嗎？我們提供完整的教學體系：\n\n【零基礎全科班】\n• 從指甲學開始學習，至保養到施作的紮實基本功。\n\n【進修課程】（適合已是美甲師）\n• 進階一層殘專班：掌握不傷甲的高階技術。\n• 日系造型設計課：學習時下最流行的暈染與複合媒材運用。\n\n【客製化課程】\n• 針對想加強的部分（如前置保養、法式等），皆可直接討論並安排日期。\n\n採小班制教學，手把手指導，歡迎私訊諮詢課程細節。",
+        lineUrl: "https://lin.ee/zJHaM9bD"
+      },
+      {
+        title: "日系 Nuance",
+        description: "擅長日系 Nuance 風格，捕捉光影與色彩的流動感。我們使用多種質地的凝膠與暈染液，堆疊出如水彩般輕柔、富有層次的藝術氣息。每一款設計都是獨一無二的，為指尖帶來優雅而耐看的氣質，非常適合追求質感與細節的您。"
+      },
+      {
+        title: "日系個性派",
+        description: "專為喜歡獨特、不隨波逐流的您打造。運用金屬元素、特殊異材質、礦石紋理或不對稱設計，展現強烈的個人風格。既有日系的精緻，又帶有率性的時髦感，讓指尖成為您全身穿搭中最吸睛的亮點。"
+      }
+    ];
+
+    const ARTIST_LIST = [
+      {
+        name: "里安 (Lian)",
+        title: "Founder / 講師",
+        experience: "資歷 10 年 / 教學 6 年",
+        specialties: ["日系 Nuance", "日系個性派", "獨特美感"],
+        tags: ["處女座細節控", "可靜可動", "質感堅持"],
+        certifications: ["日本 JNA 證照", "日本 JNEC 證照", "日本衛生管理士"],
+        description: "我是里安，身為細節控的處女座，我對指尖的美感與精緻度有著不妥協的堅持。擅長日系個性風與 Nuance 暈染，對配色有著獨到的見解。\n\n我非常享受施作過程中專注的寧靜，如果您也喜歡安靜放鬆的美甲時光，這裡會非常適合您。當然，我是「可靜可動」的，若您想分享生活點滴，我也樂於傾聽。期待為您打造獨一無二的指尖藝術。",
+        instagramUrl: "https://www.instagram.com/regalolian_?igsh=aTVucHJrbWE0YXl6"
+      },
+      {
+        name: "安安 (Ann)",
+        title: "美甲師",
+        experience: "資歷 1.5 年",
+        specialties: ["日系 Nuance", "韓系清新風格"],
+        tags: ["I 人美甲師", "細心認真", "小資族首選"],
+        description: "我是安安，一位典型的 I 人美甲師。雖然目前資歷尚淺，但是已經過系統化專業訓練出來的美甲師，擁有一顆願意認真學習的心。我擅長清透自然的韓系清新風格與日系暈染，價格親民，非常適合小資女孩或初次嘗試美甲的您。\n\n如果您喜歡安靜、不被打擾的施作氛圍，我會是您很好的選擇。當然，若您想要輕鬆閒聊，我也很樂意。希望能用我的細心，為您的指尖帶來美好與自信。",
+        instagramUrl: "https://www.instagram.com/regalo_annn?igsh=MTk2dTdxbnV0d2tqbw=="
+      }
+    ];
+
+    // Founder Lian's Price List
+    const PRICE_LIST_LIAN = [
+      {
+        title: "GEL POLISH | 凝膠",
+        items: [
+          // { name: "透明 (Transparent)", price: "1100" }, // Removed as requested
+          { name: "貓眼 (Magnet)", price: "1600" },
+          { name: "漸層 (Gradient)", price: "1800" },
+          { name: "法式 (French)", price: "2000" },
+          { name: "造型設計 (Design)", price: "2300 up", className: "pt-8" },
+        ]
+      },
+      {
+        title: "REMOVE | 卸甲/重作(本店採用日式一層殘)",
+        items: [
+          { name: "本店卸甲重做", price: "200" },
+          { name: "他店卸甲重做", price: "300" },
+          { name: "他店造型卸甲重做", price: "400" },
+          { name: "本店卸甲不續做", price: "600" },
+        ]
+      },
+      {
+        title: "ADD-ONS | 加購 / 設計",
+        items: [
+          { name: "鏡面", price: "100/指" },
+          { name: "暈染", price: "100 up" }, // changed UP to up
+          { name: "立體", price: "100 up" }, // changed UP to up
+          { name: "基底增硬", price: "50/指" },
+          { name: "補斷甲", price: "100/指" },
+          { name: "凝膠延甲", price: "100 up" }, // changed UP to up
+          { name: "水晶延甲", price: "200 up" }, // changed UP to up
+          { name: "他店延甲修整", price: "100 up" }, // changed UP to up
+        ]
+      }
+    ];
+
+    // Stylist Ann's Price List
+    const PRICE_LIST_ANN = [
+      {
+        title: "GEL POLISH | 凝膠",
+        items: [
+          { name: "透明 (Transparent)", price: "600" },
+          { name: "單色 (舒適的單色)", price: "800" },
+          { name: "貓眼 (Magnet)", price: "1200" },
+          { name: "鏡面 (Mirror)", price: "1300" },
+          { name: "法式 (French)", price: "1500" },
+          { name: "A 造型 (簡易造型)", price: "1200-1400", className: "pt-8" },
+          { name: "B 造型 (進階造型)", price: "1300-1600" },
+          { name: "盲盒設計 (由美甲師自由發揮)", price: "1500-1800" },
+        ]
+      },
+      {
+        title: "REMOVE | 卸甲/重作(本店採用日式一層殘)",
+        items: [
+          { name: "本店卸甲續作", price: "200" },
+          { name: "他店卸甲續作", price: "300-400" },
+          { name: "卸甲不續作", price: "500" },
+        ]
+      },
+      {
+        title: "ADD-ONS | 加購 / 設計",
+        items: [
+          { name: "暈染", price: "50 up" }, // changed UP to up for consistency
+          { name: "立體", price: "50 up" }, // changed UP to up for consistency
+          { name: "基底增硬", price: "50/指" },
+          { name: "補斷甲", price: "100/指" },
+          { name: "凝膠延甲", price: "100/指" },
+        ]
+      }
+    ];
+
+    // Default export for backward compatibility and general reference
+    const PRICE_LIST = PRICE_LIST_LIAN;
+
+    const BOOKING_POLICY = {
+      id: 'booking',
+      title: '預約須知',
+      subtitle: '完全預約制',
+      content: [
+        `<b>${PEER_WARNING}</b>`,
+        "<b>新客預約需支付定金 $500</b>（確認時段後提供帳號，需於 24 小時內匯款，逾時視同放棄）。",
+        "<b>定金入帳才算預約成功</b>，屆時將提供詳細工作室地址。",
+        "為維護服務品質，請勿攜伴。",
+        "無故爽約 / 當日取消，恕不退還定金。",
+        "取消或更改預約時間，請務必提前 5 天告知（更改僅限 1 次）。",
+        "臨時更改項目恕不退差額（如：原預約造型凝膠，當天改為純卸甲）。",
+        "所有流程含討論、卸甲、精緻前置保養，約需 2.5 - 3 小時，請預留充裕時間。",
+        "為維護產出品質，無法壓縮施作時間，趕時間者請斟酌。",
+        "預約時段保留 10 分鐘，逾時將視情況簡化設計或視同取消。",
+        "因現場偶有突發狀況（如前一位客人延誤），若需稍微等待敬請見諒。",
+        "提供 7 天非人為因素保固（如起翹、脫落），請拍照聯繫處理。",
+        "以上詳閱後，確認無誤歡迎預約（REGALO 保有以上說明權）。"
+      ]
+    };
+
+    const PRE_CARE = {
+      id: 'pre_care',
+      title: '施作前準備',
+      content: [
+        "<b>不必修剪指甲</b>：建議保留指白 2-3mm，美甲師將為您修整至最適合施作的甲型。",
+        "<b>避免油分</b>：施作前 24 小時請勿過度塗抹指緣油或乳液，過多油分會影響凝膠附著力。",
+        "<b>指甲健康</b>：若指緣周圍有傷口、紅腫或黴菌感染，建議待痊癒後再預約施作。",
+        "<b>服務項目</b>：本店以個人「真甲」施作為主，無提供黏貼式甲片服務。",
+        "<b>款式溝通</b>：請準備欲施作的款式圖片，現場討論能提高成品準確度。",
+        "<b>風格確認</b>：設計造型不分簡易或高階，預約前請先確認喜愛本店風格。"
+      ]
+    };
+
+    const AFTER_CARE = {
+      id: 'after_care',
+      title: '保養須知',
+      content: [
+        "剛做完凝膠指甲後，<b>避免用指尖摳硬物</b>（如易開罐、鑰匙圈）。",
+        "洗澡後指甲會變軟，此時請勿用力撞擊。",
+        "建議每日塗抹指緣油 2-3 次，保持指緣滋潤，減少甘皮增生。",
+        "避免長時間接觸熱水、溫泉或使用強酸強鹼清潔劑，建議戴手套。",
+        "<b>正確觀念</b>：凝膠指甲屬美化性質的「消耗品」，無附帶金剛不壞功能，日常使用產生磨損皆屬正常。",
+        "<b>卸除觀念</b>：凝膠指甲需交由專業美甲師卸除，<b>切勿自行摳、撥、咬、撕</b>，以免傷害真甲。",
+        "<b>維持週期</b>：<b>建議 3-4 週為一個循環週期</b>，過長易造成槓桿原理導致斷甲或折損，請定期回店卸甲重做。",
+        "<b>健康觀念</b>：指甲其實不用呼吸，在正常健康的狀態下，是可以持續施作不需休息的。"
+      ]
+    };
+
+    const FAQ_LIST = [
+      {
+        question: "現場提供哪些付款方式？",
+        answer: "我們提供「現金」與「銀行轉帳」服務，無提供信用卡刷卡，請見諒。"
+      },
+      {
+        question: "附近有停車場嗎？",
+        answer: "建議停車地點：\n\n1. <b>忠明公園地下停車場</b>（步行約 5 分鐘）\n<a href='https://www.google.com/maps/search/?api=1&query=忠明公園地下停車場' target='_blank' class='text-sand-600 font-medium hover:text-stone-800 text-xs inline-flex items-center gap-1 mt-1 mb-2'>📍 開啟 Google Maps</a>\n\n2. <b>廣三 SOGO 百貨停車場</b>（步行約 3-5 分鐘）\n<a href='https://www.google.com/maps/search/?api=1&query=廣三SOGO百貨停車場' target='_blank' class='text-sand-600 font-medium hover:text-stone-800 text-xs inline-flex items-center gap-1 mt-1 mb-2'>📍 開啟 Google Maps</a>\n\n3. <b>中美街停車場</b>（美村路一段 22 號）\n<a href='https://www.google.com/maps/search/?api=1&query=403臺中市西區忠明里美村路一段22號' target='_blank' class='text-sand-600 font-medium hover:text-stone-800 text-xs inline-flex items-center gap-1 mt-1 mb-2'>📍 開啟 Google Maps</a>\n\n4. <b>中興街停車場</b>（中興街 285 巷 19 弄 1 號）\n<a href='https://www.google.com/maps/search/?api=1&query=403臺中市西區中興街285巷19弄1號' target='_blank' class='text-sand-600 font-medium hover:text-stone-800 text-xs inline-flex items-center gap-1 mt-1 mb-2'>📍 開啟 Google Maps</a>\n\n5. <b>草悟道地下停車場</b>（步行約 8-10 分鐘，適合順便逛街）\n<a href='https://www.google.com/maps/search/?api=1&query=草悟道地下停車場' target='_blank' class='text-sand-600 font-medium hover:text-stone-800 text-xs inline-flex items-center gap-1 mt-1 mb-2'>📍 開啟 Google Maps</a>\n\n<b>機車很好停</b>：周邊有許多機車停車格，停車相當便利。\n\n※ 汽車請務必停在周邊停車場再步行前往，巷弄內無法停車。"
+      },
+      {
+        question: "施作時間大約多久？",
+        answer: "包含卸甲、精緻前置保養與款式設計，建議預留 2.5 - 3 小時。我們堅持慢工出細活，為確保品質，請勿趕時間。"
+      },
+      {
+        question: "可以帶圖施作嗎？",
+        answer: "可以！歡迎攜帶喜歡的款式圖片與我們討論。我們擅長日系 Nuance、日系個性風格以及韓系清新款，會根據您的指甲狀況與喜好進行客製化調整，提高成品滿意度。"
+      },
+      {
+        question: "可以依照預算做設計嗎？",
+        answer: "沒問題！我們提供彈性的客製化服務。歡迎您在討論時提出預算考量，我們會依照您的預算範圍，調整素材運用或簡化設計細節，在預算內為您打造最完美的指尖造型。"
+      },
+      {
+        question: "有提供延甲服務嗎？",
+        answer: "有的，我們提供「凝膠延甲」與「水晶延甲」服務，可修飾甲型或增加長度。詳細價格請參考價目表的 ADD-ONS 區塊。"
+      },
+      {
+        question: "凝膠指甲可以維持多久？",
+        answer: "一般建議維持 3-4 週。依個人用手習慣與指甲生長速度以及季節氣候而異，過長不卸除容易因槓桿原理造成真甲受傷。"
+      },
+      {
+        question: "孕婦可以使用凝膠指甲嗎？",
+        answer: "本店使用高品質無毒凝膠，基本上是安全的，但孕期體質敏感，建議您先諮詢醫生意見。"
+      },
+      {
+        question: "為什麼我的凝膠容易剝落？",
+        answer: "可能原因包含：指尖常碰水、常做家事未戴手套、習慣用指尖摳東西，或是本身指甲較軟薄。建議加強保濕並改變用手習慣。"
+      }
+    ];
+
+    const BOOKING_FORM_TEMPLATE = `● 預約姓名：
+● 預約手機：
+● 優先施作日期：
+● 優先施作時間：
+(里安時段：11:00/12:00/14:00/15:00)
+(Ann時段：09:00-18:30)
+● 指定美甲師：(里安/安安/不指定)
+● 備選日期：
+● 備選時段：
+● 是否需卸甲：(是/否)
+● 當日施作款式：(已有想法帶圖前往/提供預算讓美甲師自由發揮)`;
+
+    // --- COMPONENTS ---
+
+    // 1. Navigation
+    const Navigation = ({ activeTab, onTabChange }) => {
+      const scrollRef = useRef(null);
+      const [showLeftArrow, setShowLeftArrow] = useState(false);
+      const [showRightArrow, setShowRightArrow] = useState(true);
+
+      const tabs = [
+        { id: PageTab.PRICES, label: '價目表' },
+        { id: PageTab.BOOKING_PROCESS, label: '預約流程' },
+        { id: PageTab.ARTISTS, label: '美甲師' },
+        { id: PageTab.BOOKING, label: '預約須知' },
+        { id: PageTab.PRE_CARE, label: '施作前準備' },
+        { id: PageTab.AFTER_CARE, label: '保養須知' },
+        { id: PageTab.FAQ, label: '常見QA' },
+      ];
+
+      const checkScroll = () => {
+        if (scrollRef.current) {
+          const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+          setShowLeftArrow(scrollLeft > 1);
+          setShowRightArrow(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 1);
+        }
+      };
+
+      useEffect(() => {
+        checkScroll();
+        window.addEventListener('resize', checkScroll);
+        return () => window.removeEventListener('resize', checkScroll);
+      }, []);
+
+      const scroll = (direction) => {
+        if (scrollRef.current) {
+          const scrollAmount = 150;
+          scrollRef.current.scrollBy({
+            left: direction === 'left' ? -scrollAmount : scrollAmount,
+            behavior: 'smooth'
+          });
+        }
+      };
+
+      useEffect(() => {
+        const tabElement = document.getElementById(`tab-${activeTab}`);
+        if (tabElement && scrollRef.current) {
+          const container = scrollRef.current;
+          const scrollLeft = tabElement.offsetLeft - (container.clientWidth / 2) + (tabElement.clientWidth / 2);
+          container.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        }
+      }, [activeTab]);
+
+      return (
+        <nav className="sticky top-0 z-50 bg-cream-50/95 backdrop-blur-md border-b border-stone-200 shadow-sm">
+          <div className="max-w-md mx-auto relative group">
+            <div className={`absolute left-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-r from-cream-50 via-cream-50 to-transparent pr-6 pl-2 transition-opacity duration-300 pointer-events-none ${showLeftArrow ? 'opacity-100' : 'opacity-0'}`}>
+              <button onClick={() => scroll('left')} className="w-8 h-8 rounded-full bg-white shadow-md border border-stone-100 flex items-center justify-center text-stone-600 hover:text-stone-900 active:scale-95 transition-all pointer-events-auto">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            </div>
+            <div ref={scrollRef} onScroll={checkScroll} className="flex overflow-x-auto no-scrollbar py-3 px-4 gap-2 scroll-smooth items-center">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  id={`tab-${tab.id}`}
+                  onClick={() => onTabChange(tab.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 flex-shrink-0 border ${activeTab === tab.id ? 'bg-stone-800 text-white border-stone-800 shadow-md transform scale-105' : 'bg-white text-stone-500 hover:bg-stone-100 border-stone-200'}`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+              <div className="w-8 flex-shrink-0"></div>
+            </div>
+            <div className={`absolute right-0 top-0 bottom-0 z-20 flex items-center bg-gradient-to-l from-cream-50 via-cream-50 to-transparent pl-6 pr-2 transition-opacity duration-300 pointer-events-none ${showRightArrow ? 'opacity-100' : 'opacity-0'}`}>
+              <button onClick={() => scroll('right')} className="w-8 h-8 rounded-full bg-white shadow-md border border-stone-100 flex items-center justify-center text-stone-600 hover:text-stone-900 active:scale-95 transition-all pointer-events-auto">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </nav>
+      );
+    };
+
+    // 2. PriceSection
+    const PriceSection = ({ initialArtist = 'lian' }) => {
+      const [activeArtist, setActiveArtist] = useState(initialArtist);
+
+      useEffect(() => {
+        setActiveArtist(initialArtist);
+      }, [initialArtist]);
+
+      const currentPriceList = activeArtist === 'lian' ? PRICE_LIST_LIAN : PRICE_LIST_ANN;
+
+      return (
+        <div className="space-y-8 animate-fade-in pb-20">
+          <div className="text-center mb-6">
+            <h2 className="font-serif text-2xl text-stone-800 mb-2">Service Menu</h2>
+            <div className="w-12 h-0.5 bg-sand-400 mx-auto mb-4"></div>
+            
+            <span className="inline-block bg-white text-red-800 px-4 py-1.5 rounded-full text-xs font-medium tracking-wide shadow-sm border border-red-100">
+              {PEER_WARNING}
+            </span>
+          </div>
+
+          <div className="flex justify-center gap-4 mb-8">
+            <button
+              onClick={() => setActiveArtist('lian')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${activeArtist === 'lian' ? 'bg-stone-800 text-white border-stone-800 shadow-md transform scale-105' : 'bg-white text-stone-500 hover:bg-stone-50 border-stone-200'}`}
+            >
+              Founder 里安
+            </button>
+            <button
+              onClick={() => setActiveArtist('ann')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 border ${activeArtist === 'ann' ? 'bg-stone-800 text-white border-stone-800 shadow-md transform scale-105' : 'bg-white text-stone-500 hover:bg-stone-50 border-stone-200'}`}
+            >
+              Stylist 安安
+            </button>
+          </div>
+
+          <div className="grid gap-6">
+            {currentPriceList.map((category, idx) => (
+              <div key={idx} className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+                <h3 className="font-serif text-lg text-sand-600 border-b border-stone-100 pb-3 mb-4 tracking-wide">
+                  {category.title}
+                </h3>
+                <ul className="space-y-4">
+                  {category.items.map((item, itemIdx) => (
+                    <li key={itemIdx} className={`flex justify-between items-baseline text-stone-700 ${item.className || ''}`}>
+                      <span className="text-sm md:text-base font-medium">{item.name}</span>
+                      <div className="flex-grow border-b border-dotted border-stone-300 mx-3 relative -top-1"></div>
+                      <span className="font-serif text-stone-800 font-semibold text-lg whitespace-nowrap">
+                        <span className="text-xs mr-1 text-stone-400">$</span>
+                        {item.price}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {activeArtist === 'ann' && (
+            <div className="text-center text-xs text-stone-500 bg-cream-50 p-3 rounded-xl border border-stone-100">
+              * 施作皆含基礎護理作業 & 建構
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // 3. InfoCard
+    const InfoCard = ({ data }) => {
+      const parseContent = (text) => {
+        const parts = text.split(/(<b>.*?<\/b>)/g);
+        return parts.map((part, index) => {
+          if (part.startsWith('<b>') && part.endsWith('</b>')) {
+            return <strong key={index} className="text-stone-800 font-semibold">{part.replace(/<\/?b>/g, '')}</strong>;
+          }
+          return <span key={index}>{part}</span>;
+        });
+      };
+
+      return (
+        <div className="animate-fade-in pb-20">
+          <div className="text-center mb-8">
+            <h2 className="font-serif text-2xl text-stone-800 mb-2">{data.title}</h2>
+            <div className="w-12 h-0.5 bg-sand-400 mx-auto"></div>
+            {data.subtitle && (
+              <div className="mt-5">
+                <span className="inline-block bg-stone-800 text-cream-50 px-6 py-2 rounded-full text-base font-medium tracking-widest shadow-md border border-stone-600">
+                  {data.subtitle}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-2xl p-8 shadow-sm border border-stone-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-8 -mr-8 w-24 h-24 bg-cream-200 rounded-full opacity-50 blur-xl"></div>
+            <ul className="space-y-4 relative z-10">
+              {data.content.map((item, index) => (
+                <li key={index} className="flex gap-3 text-stone-600 leading-relaxed">
+                  <span className="text-sand-500 font-serif mt-0.5">0{index + 1}.</span>
+                  <span className="flex-1">{parseContent(item)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    };
+
+    // 4. FaqSection
+    const FaqSection = () => {
+      const [openIndex, setOpenIndex] = useState(0);
+      const toggle = (index) => setOpenIndex(openIndex === index ? null : index);
+
+      return (
+        <div className="animate-fade-in pb-20">
+          <div className="text-center mb-8">
+            <h2 className="font-serif text-2xl text-stone-800 mb-2">常見問題 Q&A</h2>
+            <div className="w-12 h-0.5 bg-sand-400 mx-auto"></div>
+          </div>
+          <div className="space-y-4">
+            {FAQ_LIST.map((faq, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden transition-all duration-300">
+                <button onClick={() => toggle(index)} className="w-full flex justify-between items-center p-5 text-left hover:bg-cream-50 transition-colors">
+                  <span className="font-medium text-stone-700 pr-4">{faq.question}</span>
+                  {openIndex === index ? <ChevronUp className="w-5 h-5 text-sand-500 flex-shrink-0" /> : <ChevronDown className="w-5 h-5 text-stone-400 flex-shrink-0" />}
+                </button>
+                <div className={`px-5 text-stone-600 text-sm leading-relaxed bg-cream-50/50 transition-all duration-500 ease-in-out overflow-hidden ${openIndex === index ? 'max-h-[1000px] py-5 opacity-100' : 'max-h-0 py-0 opacity-0'}`}>
+                  <div dangerouslySetInnerHTML={{ __html: faq.answer.replace(/\n/g, '<br />') }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    // 5. FeatureModal
+    const FeatureModal = ({ feature, onClose }) => {
+      const [isVisible, setIsVisible] = useState(false);
+
+      useEffect(() => {
+        if (feature) {
+          setIsVisible(true);
+          document.body.style.overflow = 'hidden';
+        } else {
+          setIsVisible(false);
+          document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+      }, [feature]);
+
+      if (!feature) return null;
+
+      const renderContent = (text) => {
+        const blocks = text.split('\n\n');
+        return blocks.map((block, idx) => {
+          if (block.trim().startsWith('【')) {
+            const lines = block.split('\n');
+            const title = lines[0];
+            const items = lines.slice(1);
+            return (
+              <div key={idx} className="bg-cream-50 rounded-xl p-5 mb-4 border border-stone-100 shadow-sm">
+                <h4 className="font-bold text-stone-800 mb-3 text-lg flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sand-500"></span>
+                  {title}
+                </h4>
+                <ul className="space-y-2">
+                  {items.map((item, i) => (
+                    <li key={i} className="flex gap-2 text-stone-600 text-sm">
+                       {item.trim().startsWith('•') && <span className="text-sand-400 font-bold mt-0.5">•</span>}
+                       <span className="flex-1">{item.replace(/^[•\s]+/, '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          }
+          return (
+            <p key={idx} className="mb-4 text-stone-600 leading-relaxed text-justify">
+              {block}
+            </p>
+          );
+        });
+      };
+
+      return (
+        <div className={`fixed inset-0 z-[100] flex items-center justify-center p-4 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`} role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+          <div className={`relative bg-white w-full max-w-sm rounded-2xl shadow-xl p-8 transform transition-all duration-300 ${isVisible ? 'scale-100 translate-y-0' : 'scale-95 translate-y-8'}`}>
+            <button onClick={onClose} className="absolute top-4 right-4 text-stone-400 hover:text-stone-700 transition-colors p-2 rounded-full hover:bg-stone-50">
+              <X className="w-6 h-6" />
+            </button>
+            <div className="text-center">
+              <h3 className="font-serif text-xl md:text-2xl text-stone-800 mb-6 border-b border-sand-200/50 pb-4 inline-block px-4">
+                {feature.title}
+              </h3>
+              <div className="text-stone-600 leading-relaxed text-sm md:text-base text-left whitespace-pre-line max-h-[60vh] overflow-y-auto">
+                {renderContent(feature.description)}
+              </div>
+              <div className="mt-8 flex gap-3 justify-center">
+                {feature.lineUrl && (
+                  <a href={feature.lineUrl} target="_blank" rel="noopener noreferrer" className="bg-[#06C755] text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-[#05a546] transition-colors shadow-lg flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" /> 加入課程官方 LINE
+                  </a>
+                )}
+                <button onClick={onClose} className={`px-8 py-2.5 rounded-full text-sm font-medium transition-colors shadow-lg ${feature.lineUrl ? 'bg-white text-stone-800 border border-stone-200 hover:bg-stone-50' : 'bg-stone-800 text-white hover:bg-stone-700'}`}>
+                  {feature.lineUrl ? '關閉' : '了解'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 6. ArtistSection
+    const ArtistSection = ({ onViewPrices }) => {
+      return (
+        <div className="animate-fade-in pb-20">
+          <div className="text-center mb-8">
+            <h2 className="font-serif text-2xl text-stone-800 mb-2">Artist Team</h2>
+            <div className="w-12 h-0.5 bg-sand-400 mx-auto"></div>
+            <p className="text-stone-500 text-sm mt-3">專業．細心．獨特</p>
+          </div>
+          <div className="space-y-8">
+            {ARTIST_LIST.map((artist, idx) => {
+              const artistId = idx === 0 ? 'lian' : 'ann';
+              return (
+                <div key={idx} className="bg-white rounded-2xl shadow-sm border border-stone-100 overflow-hidden">
+                  <div className="p-6 md:p-8">
+                    <div className="flex flex-row gap-4 justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-serif text-stone-800 font-semibold flex items-center gap-2">
+                          {artist.name}
+                          <span className="text-xs bg-sand-500 text-white px-2 py-0.5 rounded-full font-sans font-normal tracking-wide">
+                            {artist.title}
+                          </span>
+                        </h3>
+                        <div className="flex items-center gap-1 text-sand-600 text-sm mt-1 font-medium">
+                          <BadgeCheck className="w-4 h-4" />
+                          <span>{artist.experience}</span>
+                        </div>
+                      </div>
+                      {artist.instagramUrl && (
+                        <a href={artist.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-stone-400 hover:text-pink-600 transition-colors p-1.5 bg-stone-50 rounded-full">
+                          <Instagram className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {artist.specialties.map((spec, sIdx) => (
+                        <span key={`s-${sIdx}`} className="text-xs bg-cream-100 text-stone-600 px-3 py-1 rounded-full border border-stone-200/50"># {spec}</span>
+                      ))}
+                      {artist.tags.map((tag, tIdx) => (
+                        <span key={`t-${tIdx}`} className="text-xs bg-stone-50 text-stone-500 px-3 py-1 rounded-full border border-stone-100">{tag}</span>
+                      ))}
+                    </div>
+                    {artist.certifications && artist.certifications.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-5">
+                        {artist.certifications.map((cert, cIdx) => (
+                          <span key={`c-${cIdx}`} className="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-200 font-medium">{cert}</span>
+                        ))}
+                      </div>
+                    )}
+                    {(!artist.certifications || artist.certifications.length === 0) && <div className="mb-5"></div>}
+                    <div className="bg-cream-50/50 p-5 rounded-xl border border-stone-100/50 mb-6">
+                      <p className="text-stone-600 text-sm leading-relaxed whitespace-pre-line text-justify">{artist.description}</p>
+                    </div>
+                    <button onClick={() => onViewPrices(artistId)} className="w-full py-3 bg-stone-800 text-white text-sm font-medium rounded-xl hover:bg-stone-700 transition-colors flex items-center justify-center gap-2 active:scale-95 shadow-md">
+                      查看價目表 <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="text-center mt-8">
+               <p className="text-xs text-stone-400">每位美甲師皆經過嚴格考核，致力於為您提供最優質的服務。</p>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 7. BookingProcess
+    const BookingProcess = ({ onGoToPolicy }) => {
+      const [copied, setCopied] = useState(false);
+      const [isDepositInfoOpen, setIsDepositInfoOpen] = useState(false);
+
+      const handleCopy = async () => {
+        try {
+          await navigator.clipboard.writeText(BOOKING_FORM_TEMPLATE);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error('Failed to copy text: ', err);
+        }
+      };
+
+      return (
+        <div className="animate-fade-in pb-20">
+          <div className="text-center mb-8">
+            <h2 className="font-serif text-2xl text-stone-800 mb-2">預約流程</h2>
+            <div className="w-12 h-0.5 bg-sand-400 mx-auto"></div>
+            <p className="text-stone-500 text-sm mt-3">Simple Booking Steps</p>
+          </div>
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 flex gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-stone-800 text-white flex items-center justify-center font-serif font-bold text-lg">1</div>
+              <div className="flex-grow">
+                <h3 className="font-semibold text-stone-800 mb-1">詳閱須知 & 詢問空檔</h3>
+                <p className="text-sm text-stone-500 mb-3">請先閱讀預約須知，並傳送 LINE 訊息詢問空檔。</p>
+                <button onClick={onGoToPolicy} className="text-sand-600 text-xs font-medium flex items-center gap-1 hover:text-stone-800 transition-colors">
+                  前往預約須知 <ArrowRight className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100">
+              <div className="flex gap-4 mb-4">
+                 <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sand-500 text-white flex items-center justify-center font-serif font-bold text-lg">2</div>
+                <div>
+                  <h3 className="font-semibold text-stone-800 mb-1">填寫並傳送表單</h3>
+                  <p className="text-sm text-stone-500">複製下方格式，填妥後傳送至官方 LINE。</p>
+                </div>
+              </div>
+              <div className="bg-cream-50 rounded-xl p-4 border border-sand-200/50 relative group mb-4">
+                <pre className="whitespace-pre-wrap font-sans text-sm text-stone-600 leading-relaxed">{BOOKING_FORM_TEMPLATE}</pre>
+                <button onClick={handleCopy} className={`absolute top-3 right-3 p-2 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 shadow-sm ${copied ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
+                  {copied ? <><Check className="w-3.5 h-3.5" /> 已複製</> : <><Copy className="w-3.5 h-3.5" /> 一鍵複製</>}
+                </button>
+              </div>
+              <a href="https://lin.ee/mWJllZo" target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-2 bg-[#06C755] text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-[#05a546] transition-colors shadow-sm">
+                <MessageCircle className="w-4 h-4" /> 開啟 LINE 傳送預約
+              </a>
+            </div>
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 flex gap-4">
+               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-sand-400 text-white flex items-center justify-center font-serif font-bold text-lg">3</div>
+              <div className="flex-grow">
+                <h3 className="font-semibold text-stone-800 mb-1">確認時間與定金 (新客)</h3>
+                <div className="text-sm text-stone-500 space-y-3">
+                  <p>我們確認有空檔後，會提供匯款帳號。</p>
+                  <div className="flex items-start gap-2 bg-cream-50 p-2.5 rounded-lg border border-sand-100">
+                    <Clock className="w-4 h-4 text-sand-500 mt-0.5 flex-shrink-0" />
+                    <span className="text-stone-600 text-xs">請於 <span className="font-bold text-stone-800">24 小時內</span> 完成匯款，逾時系統將自動取消保留。</span>
+                  </div>
+                  <div className="border-t border-stone-100 pt-2 mt-2">
+                    <button onClick={() => setIsDepositInfoOpen(!isDepositInfoOpen)} className="w-full flex justify-between items-center text-xs font-medium text-stone-600 hover:text-stone-900 transition-colors py-1">
+                      <span className="flex items-center gap-1"><AlertCircle className="w-3.5 h-3.5" /> 定金注意事項</span>
+                      {isDepositInfoOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isDepositInfoOpen ? 'max-h-60 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'}`}>
+                      <ul className="text-xs text-stone-500 space-y-1.5 pl-2 bg-stone-50 p-3 rounded-lg">
+                        <li className="flex gap-2"><span className="text-sand-400">•</span><span>新客定金 <span className="font-semibold text-stone-700">$500</span>，可折抵當日消費。</span></li>
+                        <li className="flex gap-2 text-red-800/80"><span className="text-red-300">•</span><span>當日未到 (No Show) 或臨時取消，定金恕不退還。</span></li>
+                        <li className="flex gap-2"><span className="text-sand-400">•</span><span>更改時間請提前 5 天告知，否則定金不予退還。</span></li>
+                         <li className="flex gap-2"><span className="text-sand-400">•</span><span>定金若未在時限內入帳，名額將釋出給候補客人。</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+             <div className="bg-white rounded-2xl p-6 shadow-sm border border-stone-100 flex gap-4">
+               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-stone-300 text-white flex items-center justify-center font-serif font-bold text-lg">4</div>
+              <div className="flex-grow">
+                <h3 className="font-semibold text-stone-800 mb-1">預約成功</h3>
+                <p className="text-sm text-stone-500 mb-2">確認款項入帳後，才算正式預約成功。</p>
+                <div className="inline-flex items-center gap-1.5 text-xs text-sand-600 bg-sand-50 px-2 py-1 rounded-md font-medium">
+                  <MapPin className="w-3 h-3" /> 屆時將提供詳細工作室地址
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // 8. Footer
+    const Footer = ({ onBackHome, activeTab }) => {
+      return (
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-cream-50 via-cream-50 to-transparent z-40">
+          <div className="max-w-md mx-auto flex gap-3">
+            {activeTab !== PageTab.PRICES && (
+              <button onClick={onBackHome} className="flex-1 bg-white border border-stone-200 text-stone-600 font-medium py-3 rounded-xl shadow-sm hover:bg-stone-50 transition-colors text-sm">
+                返回首頁
+              </button>
+            )}
+            <a href="https://lin.ee/mWJllZo" target="_blank" rel="noopener noreferrer" className="flex-1 bg-stone-800 text-white font-medium py-3 rounded-xl shadow-lg hover:bg-stone-700 transition-transform active:scale-95 flex items-center justify-center gap-2 text-sm">
+              <MessageCircle className="w-4 h-4" /> 立即預約
+            </a>
+            <a href="https://www.instagram.com/regalolian_?igsh=aTVucHJrbWE0YXl6" target="_blank" rel="noopener noreferrer" className="w-12 flex items-center justify-center bg-white border border-stone-200 text-stone-800 rounded-xl shadow-sm hover:text-pink-600 transition-colors">
+              <Instagram className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      );
+    };
+
+    // --- APP COMPONENT ---
+    const App = () => {
+      const [activeTab, setActiveTab] = useState(PageTab.PRICES);
+      const [selectedFeature, setSelectedFeature] = useState(null);
+      const [priceTabArtist, setPriceTabArtist] = useState('lian');
+
+      const handleViewPrices = (artistId) => {
+        setPriceTabArtist(artistId);
+        setActiveTab(PageTab.PRICES);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      const renderContent = () => {
+        switch (activeTab) {
+          case PageTab.PRICES: return <PriceSection initialArtist={priceTabArtist} />;
+          case PageTab.BOOKING_PROCESS: return <BookingProcess onGoToPolicy={() => setActiveTab(PageTab.BOOKING)} />;
+          case PageTab.ARTISTS: return <ArtistSection onViewPrices={handleViewPrices} />;
+          case PageTab.BOOKING: return <InfoCard data={BOOKING_POLICY} />;
+          case PageTab.PRE_CARE: return <InfoCard data={PRE_CARE} />;
+          case PageTab.AFTER_CARE: return <InfoCard data={AFTER_CARE} />;
+          case PageTab.FAQ: return <FaqSection />;
+          default: return <PriceSection initialArtist={priceTabArtist} />;
+        }
+      };
+
+      return (
+        <div className="min-h-screen font-sans bg-cream-50 text-stone-800 selection:bg-sand-200">
+          <header className="pt-10 pb-6 text-center px-4 bg-gradient-to-b from-cream-100 to-cream-50">
+            <h1 className="font-display text-4xl md:text-5xl tracking-[0.2em] text-stone-800 mb-8">{SALON_NAME}</h1>
+            <div className="max-w-xs mx-auto space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {SALON_FEATURES.slice(0, 2).map((feature, idx) => (
+                  <button key={idx} onClick={() => setSelectedFeature(feature)} className="bg-white/80 border border-sand-200/50 rounded-xl py-3 px-2 text-xs text-stone-600 shadow-sm flex items-center justify-center font-medium hover:bg-white hover:shadow-md hover:scale-105 hover:text-sand-600 transition-all duration-300 active:scale-95">
+                    {feature.title}
+                  </button>
+                ))}
+              </div>
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-sand-200/50"></div>
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-gradient-to-b from-cream-100 to-cream-50 px-3 text-xs text-stone-500 font-medium tracking-widest">擅長風格</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {SALON_FEATURES.slice(2, 4).map((feature, idx) => (
+                  <button key={idx} onClick={() => setSelectedFeature(feature)} className="bg-white/80 border border-sand-200/50 rounded-xl py-3 px-2 text-xs text-stone-600 shadow-sm flex items-center justify-center font-medium hover:bg-white hover:shadow-md hover:scale-105 hover:text-sand-600 transition-all duration-300 active:scale-95">
+                    {feature.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
+
+          <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+          <main className="max-w-md mx-auto px-4 pt-8 min-h-[60vh]">
+            {renderContent()}
+          </main>
+          <Footer onBackHome={() => setActiveTab(PageTab.PRICES)} activeTab={activeTab} />
+          <FeatureModal feature={selectedFeature} onClose={() => setSelectedFeature(null)} />
+        </div>
+      );
+    };
+
+    // --- MOUNT ---
+    const rootElement = document.getElementById('root');
+    const root = createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
